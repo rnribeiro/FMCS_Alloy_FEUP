@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<alloy>
+
+<view>
+
+<defaultnode/>
+
+<defaultedge/>
+
+<node>
+   <type name="Int"/>
+   <type name="String"/>
+   <type name="univ"/>
+   <type name="seq/Int"/>
+</node>
+
+<node color="Gray">
+   <set name="this/Unknown" type="VSS"/>
+</node>
+
+<node color="Green">
+   <set name="this/Connected" type="Train"/>
+   <set name="this/Free" type="VSS"/>
+</node>
+
+<node color="Red">
+   <set name="this/Occupied" type="VSS"/>
+</node>
+
+<node numberatoms="no">
+   <type name="VSS"/>
+</node>
+
+<node shape="Trapezoid" color="Red">
+   <type name="Train"/>
+</node>
+
+<node style="Bold">
+   <set name="this/begin" type="VSS"/>
+   <set name="this/end" type="VSS"/>
+</node>
+
+<node visible="no">
+   <type name="Track"/>
+</node>
+
+</view>
+
+</alloy>
