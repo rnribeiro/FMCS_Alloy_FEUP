@@ -45,8 +45,8 @@ fact Multiplicities {
 
 }
 
+// The track forms a single line between begin and end VSS's
 fact linearTrack {
-	// The track forms a single line between begin and end VSS's
 	VSS in begin.*successor
 	successor in (VSS - end) one -> one (VSS - begin)
 }
@@ -56,6 +56,14 @@ fact onlyOneState {
 	no Free & Occupied & Unknown
 }
 
+// Initial state of the system
+fact Init {
+	// All VSS are Free
+	no (Occupied + Unknown) and VSS = Free
+
+	// All Trains are connected
+	Train = Connected
+}
 
 // Goal - No 2 trains in the same VSS
 assert fullSafety {
@@ -63,7 +71,8 @@ assert fullSafety {
 }
 
 
-run {} for 5 but exactly 6 VSS
+
+run {} for 5 but exactly 3 Train, exactly 6 VSS
 
 
 

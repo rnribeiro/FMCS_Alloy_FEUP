@@ -19,7 +19,6 @@
 </node>
 
 <node color="Green">
-   <set name="this/Connected" type="Train"/>
    <set name="this/Free" type="VSS"/>
 </node>
 
@@ -31,13 +30,17 @@
    <type name="VSS"/>
 </node>
 
-<node shape="Trapezoid" color="Red">
-   <type name="Train"/>
-</node>
-
 <node style="Bold">
    <set name="this/begin" type="VSS"/>
    <set name="this/end" type="VSS"/>
+</node>
+
+<node style="Solid" color="Green">
+   <set name="this/Connected" type="Train"/>
+</node>
+
+<node style="Solid" shape="Trapezoid" color="Red">
+   <type name="Train"/>
 </node>
 
 <node visible="no">
