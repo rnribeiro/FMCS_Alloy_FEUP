@@ -16,6 +16,7 @@ sig Train {
 	/* cars : some Car // each train is composed of at least one car*/
 	var position : one VSS
 }
+var sig Connected in Train {}
 
 // Track Entity
 sig Track {
@@ -25,8 +26,9 @@ sig Track {
 // VSS Entity
 sig VSS {
 	successor : lone VSS, // Each VSS can have a successor
-	var state : one State // Each VSS must have only one (varying) state
 }
+
+one sig begin, end in VSS {}
 
 /* Car Entity
 sig Car {
@@ -34,30 +36,34 @@ sig Car {
 	succ : lone Car // Each car can have a successor
 }
 */
-
-// VSS State Entity
-abstract sig State {}
 	
 // 3 Kinds of State
-one sig Free, Occupied, Unknown extends State {}
+var sig Free, Occupied, Unknown in VSS {}
 
 fact Multiplicities {
-	-- cars in Train one -> some Car
 	vss in Track one -> some VSS
-	successor in VSS one -> lone VSS
-	-- succ in Car one -> lone Car
-	
+
+}
+
+fact linearTrack {
+	// The track forms a single line between begin and end VSS's
+	VSS in begin.*successor
+	successor in (VSS - end) one -> one (VSS - begin)
+}
+
+// A VSS can only have one state at once
+fact onlyOneState {
+	no Free & Occupied & Unknown
 }
 
 
 // Goal - No 2 trains in the same VSS
 assert fullSafety {
-	-- goal: position in Train lone -> one VSS
-	always (all t:Train, v: VSS
+	position in Train lone -> one VSS
 }
 
 
-run {}
+run {} for 5 but exactly 6 VSS
 
 
 
