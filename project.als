@@ -13,8 +13,8 @@ some 1..*
 
 // Train Entity
 sig Train {
-	/* cars : some Car // each train is composed of at least one car*/
-	var position : one VSS
+	cars : set Car, 
+	head : one Car  // each train is composed of at least one head (locomotive)
 }
 var sig Connected in Train {}
 
@@ -30,18 +30,20 @@ sig VSS {
 
 one sig begin, end in VSS {}
 
-/* Car Entity
+// Car Entity
 sig Car {
 	var position : one VSS, // Each car has to be in a (varying) VSS
 	succ : lone Car // Each car can have a successor
 }
-*/
-	
+
+
+
 // 3 Kinds of State
 var sig Free, Occupied, Unknown in VSS {}
 
 fact Multiplicities {
 	vss in Track one -> some VSS
+	cars in Train one -> set Car
 
 }
 
@@ -65,14 +67,18 @@ fact Init {
 	Train = Connected
 }
 
+
+
 // Goal - No 2 trains in the same VSS
 assert fullSafety {
-	position in Train lone -> one VSS
+--	position in Train lone -> one VSS
 }
 
 
 
-run {} for 5 but exactly 3 Train, exactly 6 VSS
+
+
+run {} for 5 but exactly 2 Train, exactly 6 VSS, exactly 5 Car
 
 
 
