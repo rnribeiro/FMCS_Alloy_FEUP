@@ -8,15 +8,20 @@ Facts specify assumptions
 lone 0..1
 some 1..*
 
+// Transitive closure
+^ R= R + R.R + R.R.R + R.R.R.R + ...
+// Reflexive transitive closure
+*R = ^R + iden
 
 */
 
 // Train Entity
 sig Train {
-	cars : set Car, 
-	head : one Car  // each train is composed of at least one head (locomotive)
+	cars : some Car
 }
 var sig Connected in Train {}
+
+one sig head, tail in Car {}
 
 // Track Entity
 sig Track {
@@ -36,15 +41,19 @@ sig Car {
 	succ : lone Car // Each car can have a successor
 }
 
-
-
 // 3 Kinds of State
 var sig Free, Occupied, Unknown in VSS {}
 
 fact Multiplicities {
 	vss in Track one -> some VSS
-	cars in Train one -> set Car
+	cars in Train one -> some Car
+}
 
+// The set Cars must be equal to head + head.*succ
+fact linearTrain {
+	Car in head.*succ
+	succ in (Car - tail) one -> one (Car - head)
+		
 }
 
 // The track forms a single line between begin and end VSS's
@@ -74,12 +83,7 @@ assert fullSafety {
 --	position in Train lone -> one VSS
 }
 
-
-
-
-
-run {} for 5 but exactly 2 Train, exactly 6 VSS, exactly 5 Car
-
+run {} for 5 but exactly 1 Train, exactly 6 VSS, exactly 5 Car
 
 
 

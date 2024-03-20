@@ -8,10 +8,12 @@
 <defaultedge/>
 
 <node>
+   <type name="Car"/>
    <type name="Int"/>
    <type name="String"/>
    <type name="univ"/>
    <type name="seq/Int"/>
+   <set name="this/tail" type="Car"/>
 </node>
 
 <node color="Gray">
@@ -30,6 +32,10 @@
    <type name="VSS"/>
 </node>
 
+<node shape="Trapezoid">
+   <set name="this/head" type="Car"/>
+</node>
+
 <node style="Bold">
    <set name="this/begin" type="VSS"/>
    <set name="this/end" type="VSS"/>
@@ -46,6 +52,10 @@
 <node visible="no">
    <type name="Track"/>
 </node>
+
+<edge style="inherit">
+   <relation name="position"> <type name="Car"/> <type name="VSS"/> </relation>
+</edge>
 
 </view>
 
