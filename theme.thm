@@ -12,8 +12,8 @@
    <type name="Int"/>
    <type name="String"/>
    <type name="univ"/>
+   <type name="VSS"/>
    <type name="seq/Int"/>
-   <set name="this/tail" type="Car"/>
 </node>
 
 <node color="Gray">
@@ -28,12 +28,12 @@
    <set name="this/Occupied" type="VSS"/>
 </node>
 
-<node numberatoms="no">
-   <type name="VSS"/>
+<node shape="Circle">
+   <type name="Head"/>
 </node>
 
-<node shape="Trapezoid">
-   <set name="this/head" type="Car"/>
+<node shape="Dbl Circle">
+   <type name="Tail"/>
 </node>
 
 <node style="Bold">
@@ -53,8 +53,13 @@
    <type name="Track"/>
 </node>
 
-<edge style="inherit">
+<edge style="inherit" attribute="yes">
    <relation name="position"> <type name="Car"/> <type name="VSS"/> </relation>
+</edge>
+
+<edge visible="no" attribute="yes">
+   <relation name="cars"> <type name="Train"/> <type name="Car"/> </relation>
+   <relation name="tail"> <type name="Train"/> <type name="Tail"/> </relation>
 </edge>
 
 </view>
