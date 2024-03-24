@@ -41,12 +41,16 @@
    <set name="this/end" type="VSS"/>
 </node>
 
-<node style="Solid" color="Green">
-   <set name="this/Connected" type="Train"/>
+<node style="Solid" shape="Trapezoid" color="Green">
+   <type name="Train"/>
 </node>
 
-<node style="Solid" shape="Trapezoid" color="Red">
-   <type name="Train"/>
+<node style="inherit" color="Gray">
+   <set name="this/Offline" type="Train"/>
+</node>
+
+<node style="inherit" color="Red">
+   <set name="this/Incomplete" type="Train"/>
 </node>
 
 <node visible="no">
