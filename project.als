@@ -68,8 +68,15 @@ fact linearTrack {
 }
 
 // A VSS can only have one state at once
+// A Train can only be in one state at once: Online and Complete, Incomplete or Offline
 fact onlyOneState {
-	no Free & Occupied & Unknown
+	always ({
+		no Free & Occupied & Unknown
+		no Free & Occupied 
+		no Occupied & Unknown
+		no Free & Unknown
+	})
+	always (no Incomplete & Offline & (Train - Incomplete - Offline))
 }
 
 // Initial state of the system
@@ -81,7 +88,9 @@ fact Init {
 	all c1, c2:Car | c1->c2 in succ implies c1.position = c2.position.successor
 
 	// All train start in the beginning of the track
-	Tail.position = begin
+	-- Tail.position = begin
+	// No train collisions
+	-- all t1, t2 : Train | no t1.cars.position & t2.cars.position
 
 	// VSS's are either free or occupied
 	Occupied = Car.position
@@ -89,20 +98,13 @@ fact Init {
 	no Unknown
 }
 
-
 // A car cannot be in a vss that is in front of the vss of the car in front of it
 fact noCollision {
 	all c:Car | not c.position in succ.c.position.*successor
 }
 
-// assert connected {
-// 	// The train is connected
-// 	always (all c1, c2:Car | c1->c2 in succ implies c1.position = c2.position.successor)
-// }
-
 // No operation predicate
 pred nop {
-	// No operation
 	position' = position
 	Incomplete' = Incomplete
 	Offline' = Offline
@@ -114,18 +116,41 @@ pred nop {
 // Movement of the train
 pred move [t: Train] {
 	// Guard
-	t.head.position != end
-	t.head.position.successor in Free 
+	t.head.position != end // Train has not reached the end of the track
+	t.head.position.successor in Free  // The VSS in front of the head is a free VSS
 
-	// Effect if 
+	// Effect - All cars in any kind of train move one VSS
 	all c : t.cars | c.position' = c.position.successor
-	Free' = VSS - Unknown - Train.cars.position'
-	Occupied' = VSS & Train.cars.position' - Unknown
 
-	// Frame conditions
-	-- Connected' = Connected
-	Unknown' = Unknown
+	// if Train is both complete and online
+	no (t & Incomplete & Offline) implies {
+		Free' = VSS - Unknown - Train.cars.position'
+		Occupied' = VSS & Train.cars.position' - Unknown
+		Unknown' = Unknown
+	}
+
+	// if Train is Offline
+	t in Offline implies {
+		Unknown' = Unknown + t.cars.position'
+
+		// Frame Conditions
+		Free' = VSS - Occupied - Unknown
+		Occupied' = Occupied
+	}
+
+	// if Train is Incomplete
+	t in Incomplete implies {
+		all c: t.cars | t.tail in c.*succ implies (Unknown' = Unknown + c.position')
+
+		Free' = VSS - Unknown - Train.cars.position'
+		Occupied' = VSS & Train.cars.position' - Unknown
+		
+	}
+
+	// General Frame conditions
 	all t1: Train - t | t1.cars.position' = t1.cars.position
+	Incomplete' = Incomplete
+	Offline' = Offline
 
 }
 
@@ -167,13 +192,18 @@ fact Traces {
 
 // Goal - No 2 trains in the same VSS
 assert fullSafety {
---	position in Train lone -> one VSS
+	always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
 }
+check fullSafety
 
 run  {
+--	one t: Train | t.tail.position = begin
 	all t: Train | eventually move[t]
+	some t: Train | eventually t in Offline
+	always(	all t: Offline | eventually move[t])
+	always (no Incomplete)
 --	some t: Train | some c: t.cars | eventually disconnect[t, c]
-} for 5 but exactly 10 VSS, exactly 2 Train, exactly 6 Car
+} for 5 but exactly 12 VSS, exactly 2 Train, exactly 6 Car
 
 
 
