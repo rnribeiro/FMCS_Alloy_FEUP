@@ -12,20 +12,7 @@
    <type name="Int"/>
    <type name="String"/>
    <type name="univ"/>
-   <type name="VSS"/>
    <type name="seq/Int"/>
-</node>
-
-<node color="Gray">
-   <set name="this/Unknown" type="VSS"/>
-</node>
-
-<node color="Green">
-   <set name="this/Free" type="VSS"/>
-</node>
-
-<node color="Red">
-   <set name="this/Occupied" type="VSS"/>
 </node>
 
 <node shape="Circle">
@@ -36,9 +23,13 @@
    <type name="Tail"/>
 </node>
 
-<node style="Bold">
-   <set name="this/begin" type="VSS"/>
-   <set name="this/end" type="VSS"/>
+<node style="Bold" shape="Ellipse">
+   <type name="Begin"/>
+   <type name="End"/>
+</node>
+
+<node style="Solid">
+   <type name="VSS"/>
 </node>
 
 <node style="Solid" shape="Trapezoid" color="Green">
@@ -47,10 +38,16 @@
 
 <node style="inherit" color="Gray">
    <set name="this/Offline" type="Train"/>
+   <set name="this/Unknown" type="VSS"/>
+</node>
+
+<node style="inherit" color="Green">
+   <set name="this/Free" type="VSS"/>
 </node>
 
 <node style="inherit" color="Red">
    <set name="this/Incomplete" type="Train"/>
+   <set name="this/Occupied" type="VSS"/>
 </node>
 
 <node visible="no">

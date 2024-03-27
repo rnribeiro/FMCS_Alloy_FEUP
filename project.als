@@ -17,14 +17,16 @@ some 1..*
 
 // Track Entity
 sig Track {
-	vss : some VSS // Each track is composed of at least one VSS
+	vss : some VSS, // Each track is composed of at least one VSS
+	begin : one Begin,
+	end : one End
 }
 
 // VSS Entity
 sig VSS {
-	successor : lone VSS, // Each VSS can have a successor
+	successor : lone VSS // Each VSS can have a successor
 }
-one sig begin, end in VSS {}
+sig Begin, End extends VSS {}
 // 3 Kinds of State
 var sig Free, Occupied, Unknown in VSS {}
 
@@ -47,6 +49,8 @@ sig Head, Tail extends Car {}
 fact Multiplicities {
 	// One VSS can only belong to one track
 	vss in Track one -> some VSS
+	begin in Track one -> one Begin
+	end in Track one -> one End
 	// One car can only belong to one train
 	cars in Train one -> some Car
 	head in Train one -> one Head
@@ -61,11 +65,14 @@ fact linearTrain {
 	no Tail.succ	
 } 
 
-// The track forms a single line between begin and end VSS's
+// Tracks form a single line from Begin to End
 fact linearTrack {
-	VSS in begin.*successor
-	successor in (VSS - end) one -> one (VSS - begin)
-}
+	// All cars and the tail are a succesor of the head
+	all t:Track | t.vss in t.begin.*successor and t.end in t.begin.*successor
+	// The tails have no successore
+	no End.successor
+} 
+
 
 // A VSS can only have one state at once
 // A Train can only be in one state at once: Online and Complete, Incomplete or Offline
@@ -116,7 +123,7 @@ pred nop {
 // Movement of the train
 pred move [t: Train] {
 	// Guard
-	t.head.position != end // Train has not reached the end of the track
+	no t.head.position & End // Train has not reached the end of the track
 	t.head.position.successor in Free  // The VSS in front of the head is a free VSS
 
 	// Effect - All cars in any kind of train move one VSS
@@ -198,10 +205,10 @@ check fullSafety
 
 run  {
 --	one t: Train | t.tail.position = begin
-	all t: Train | eventually move[t]
-	some t: Train | eventually t in Offline
-	always(	all t: Offline | eventually move[t])
-	always (no Incomplete)
+--	all t: Train | eventually move[t]
+--	some t: Train | eventually t in Offline
+--	always(	all t: Offline | eventually move[t])
+--	always (no Incomplete)
 --	some t: Train | some c: t.cars | eventually disconnect[t, c]
 } for 5 but exactly 12 VSS, exactly 2 Train, exactly 6 Car
 
