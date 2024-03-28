@@ -100,6 +100,10 @@ fact Init {
 	position in Car lone -> one VSS
 	// All train should have at least one car between the head and the tail
 	all t: Train | some (t.cars - t.head - t.tail)
+	// Initially there is no more than one car in the same VSS
+	position in Car lone -> one VSS
+	// All train should have at least one car between the head and the tail
+	all t: Train | some (t.cars - t.head - t.tail)
 
 	// VSS's are either free or occupied
 	Occupied = Car.position
@@ -185,7 +189,21 @@ pred loseCar [t: Train, c: Car] {
 }
 
 pred loseConnection [t: Train] {
-	
+	// Guard
+	t not in Offline
+
+	// Effects
+	// train becomes offline
+	Offline' = Offline + t
+	// remove train cars' vss from Occupied
+	Occupied' = Occupied - t.cars.position
+	// add train cars' vss to Unknown
+	Unknown' = Unknown + t.cars.position
+
+	// Frame conditions
+	all c: Car | c.position' = c.position
+	Incomplete' = Incomplete
+	Free' = Free
 }
 
 // Behaviour of the system
@@ -232,3 +250,13 @@ run  {
 
 
 
+run  {
+--	one t: Train | t.tail.position = begin
+--	all t: Train | eventually move[t]
+--	some t: Train | eventually t in Offline
+--	always(	all t: Offline | eventually move[t])
+--	always (no Incomplete)
+--	some t: Train | some c: t.cars | eventually disconnect[t, c]
+} for 5 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
+
+run loseConnection for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
