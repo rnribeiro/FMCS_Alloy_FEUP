@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <alloy>
 
-<view>
+<view nodetheme="Martha" edgetheme="Standard">
 
 <defaultnode/>
 
@@ -23,12 +23,12 @@
    <type name="Tail"/>
 </node>
 
-<node style="Bold" shape="Ellipse">
+<node style="Bold">
    <type name="Begin"/>
    <type name="End"/>
 </node>
 
-<node style="Solid">
+<node style="Solid" shape="House">
    <type name="VSS"/>
 </node>
 
