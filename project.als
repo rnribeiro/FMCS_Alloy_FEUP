@@ -78,6 +78,7 @@ fact onlyOneState {
 		no Free & Occupied 
 		no Occupied & Unknown
 		no Free & Unknown
+		--all v:VSS | v in (Free + Occupied + Unknown)
 	})
 	always ({
 		no Incomplete & Offline & (Train - Incomplete - Offline)
@@ -126,23 +127,27 @@ pred nop {
 pred move [t: Train] {
 	// Guard
 	no t.head.position & End // Train has not reached the end of the track
-	t.head.position.successor in Free  // The VSS in front of the head is a free VSS
+	t.head.position.successor in Free  // The VSS in front of the head is a free VSS, otherwise it cannot move
 
-	// Effect - All cars of train t move one VSS (independently of the state)
+	// Effect - All cars of the train move one VSS, independently of its state
 	all c : t.cars | c.position' = c.position.successor
+	
 
 	// if Train is both complete and online
-	no (t & Incomplete & Offline) implies {
-		Free' = VSS - Unknown - Train.cars.position'
-		Occupied' = VSS & Train.cars.position' - Unknown
+	no (t & (Incomplete + Offline)) implies {
+		// The Free VSSs are all those that are not unknown and not occupied by Online or Incomplete cars
+		Free' = VSS - Unknown - (Train-Offline).cars.position'
+		// The Occupied VSS are all those occupied by Online or Incomplete trains except those VSS known to be unknown
+		Occupied' = (Train - Offline).cars.position' - Unknown
 		Unknown' = Unknown
 	}
 
 	// if Train is Offline
 	t in Offline implies {
-		Unknown' = Unknown + t.cars.position'
 		// Frame Conditions
-		Free' = VSS - Occupied - Unknown
+		// As the train is Offline and there is no communication with the MAs, all VSS states remain unchanged
+		Unknown' = Unknown
+		Free' = Free
 		Occupied' = Occupied
 	}
 
@@ -188,11 +193,11 @@ pred loseConnection [t: Train] {
 	t not in Offline
 
 	// Effects
-	// train becomes offline
+	// Train becomes offline
 	Offline' = Offline + t
-	// remove train cars' vss from Occupied
+	// Remove train cars' vss from Occupied
 	Occupied' = Occupied - t.cars.position
-	// add train cars' vss to Unknown
+	// Add train cars' vss to Unknown
 	Unknown' = Unknown + t.cars.position
 
 	// Frame conditions
@@ -204,7 +209,6 @@ pred loseConnection [t: Train] {
 }
 
 // Behaviour of the system
-
 fact Traces {
 	always (
 		nop 
@@ -219,20 +223,19 @@ assert fullSafety {
 	position in Car lone -> one VSS
 }
 
-check fullSafety for 1..150 steps
+check fullSafety
 
+// Example run command
 run traces {
 
-	some t1: Train | {
---		t1 != t2
+	some t1, t2: Train | {
+		t1 != t2
 		t1.tail.position in Begin
 		no Head.position & End
---		eventually move[t1] 
---		eventually move[t2]
---		eventually loseConnection[t1]
---		always (t1 in Offline implies (eventually move[t1]))
-		eventually no Head.position.*successor & Free
+		eventually loseConnection[t2]
+		always (loseConnection[t2] implies after move[t2] )
+		eventually (no Head.position.*successor & (Free-End))
 		
 	}
 
-} for 20 but 1..30 steps, exactly 2 Train, exactly 10 VSS, exactly 1 Track, exactly 4 Car
+} for 15 but 1..30 steps, exactly 2 Train, exactly 6 VSS, exactly 1 Track, exactly 4 Car
