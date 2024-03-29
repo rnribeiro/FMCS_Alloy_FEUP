@@ -139,13 +139,13 @@ pred move [t: Train] {
 	}
 
 	// if Train is Offline
-/*	t in Offline implies {
+	t in Offline implies {
 		Unknown' = Unknown + t.cars.position'
 		// Frame Conditions
 		Free' = VSS - Occupied - Unknown
 		Occupied' = Occupied
 	}
-*/
+
 	// if Train is Incomplete
 	t in Incomplete implies {
 		all c: t.cars | t.tail in c.*succ implies (Unknown' = Unknown + c.position')
