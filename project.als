@@ -99,11 +99,7 @@ fact Init {
 	// Initially there is no more than one car in the same VSS
 	position in Car lone -> one VSS
 	// All train should have at least one car between the head and the tail
-	all t: Train | some (t.cars - t.head - t.tail)
-	// Initially there is no more than one car in the same VSS
-	position in Car lone -> one VSS
-	// All train should have at least one car between the head and the tail
-	all t: Train | some (t.cars - t.head - t.tail)
+--	all t: Train | some (t.cars - t.head - t.tail)
 
 	// VSS's are either free or occupied
 	Occupied = Car.position
@@ -143,14 +139,13 @@ pred move [t: Train] {
 	}
 
 	// if Train is Offline
-	t in Offline implies {
+/*	t in Offline implies {
 		Unknown' = Unknown + t.cars.position'
-
 		// Frame Conditions
 		Free' = VSS - Occupied - Unknown
 		Occupied' = Occupied
 	}
-
+*/
 	// if Train is Incomplete
 	t in Incomplete implies {
 		all c: t.cars | t.tail in c.*succ implies (Unknown' = Unknown + c.position')
@@ -204,6 +199,8 @@ pred loseConnection [t: Train] {
 	all c: Car | c.position' = c.position
 	Incomplete' = Incomplete
 	Free' = Free
+
+	
 }
 
 // Behaviour of the system
@@ -216,47 +213,26 @@ fact Traces {
 	)
 }
 
-
 // Goal - No 2 trains in the same VSS
 assert fullSafety {
 	always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
+	position in Car lone -> one VSS
 }
 
-check fullSafety
+check fullSafety for 1..150 steps
 
-run modelExample {
-} for 10 but exactly 2 Train, exactly 10 Car, exactly 1 Track, exactly 15 VSS
+run traces {
 
+	some t1: Train | {
+--		t1 != t2
+		t1.tail.position in Begin
+		no Head.position & End
+--		eventually move[t1] 
+--		eventually move[t2]
+--		eventually loseConnection[t1]
+--		always (t1 in Offline implies (eventually move[t1]))
+		eventually no Head.position.*successor & Free
+		
+	}
 
-run  {
-	--one t: Train | t.tail.position in Begin
-	all t: Train | eventually move[t]
-	some t: Train | eventually t in Offline
-	always(	all t: Offline | eventually move[t])
-	always (no Incomplete)
---	some t: Train | some c: t.cars | eventually loseConnection[t, c]
-} for 5 but exactly 12 VSS, exactly 2 Train, exactly 6 Car, de
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-run  {
---	one t: Train | t.tail.position = begin
---	all t: Train | eventually move[t]
---	some t: Train | eventually t in Offline
---	always(	all t: Offline | eventually move[t])
---	always (no Incomplete)
---	some t: Train | some c: t.cars | eventually disconnect[t, c]
-} for 5 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
-
-run loseConnection for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
+} for 20 but 1..30 steps, exactly 2 Train, exactly 10 VSS, exactly 1 Track, exactly 4 Car
