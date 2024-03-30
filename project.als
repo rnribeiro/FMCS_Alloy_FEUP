@@ -63,7 +63,7 @@ fact linearTrain {
 	no Tail.succ	
 } 
 
-// Each Track forms a single line between beggining and ending VSSs
+// Each Track forms a single line between beginning and ending VSSs
 fact linearTrack {
 	// All VSSs including the last one are successors of the beginning one
 	all t:Track | t.vss in t.begin.*successor and t.end in t.begin.*successor
@@ -267,7 +267,7 @@ run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exac
 // Run command to valide Train positions in the track
 run trainPositions {} for exactly 1 Track, exactly 20 VSS, exactly 3 Train, exactly 10 Car
 
-// Run command for 1 train to move from the beggining to the end of the track to verify that all VSS states change accordingly
+// Run command for 1 train to move from the beginning to the end of the track to verify that all VSS states change accordingly
 run trainMovement {
 	some t: Train {
 		t.tail.position in Begin
@@ -278,7 +278,7 @@ run trainMovement {
 // Check command to verify if there are no train collisions given 2 trains t1, t2 such that:
 /*
 
-		- t1 starts in the beggining of the track
+		- t1 starts in the beginning of the track
 		- t2 does not start in the end of the track
 		- Eventually one of the trains reaches the end of the track
 		- Eventually there will be no free VSS between trains
@@ -299,7 +299,7 @@ check noTrainMovementCollision {
 // Check command to verify if there are no train collisions given 2 trains t1, t2 such that:
 /*
 	
-		- t1 starts in the beggining of the track
+		- t1 starts in the beginning of the track
 		- t2 does not start in the end of the track
 		- Eventually one of the trains reaches the end of the track
 		- Eventually there will be no free VSS between trains
@@ -323,7 +323,7 @@ check noTrainMovementCollision2 {
 // Run command to validate both losing and regaining connections
 /* 
 Given 2 trains t1 and t2:
-	- t1 starts in the beggining of the track;
+	- t1 starts in the beginning of the track;
 	- No train starts at the End of the track;
 	- "eventually gainConnection[t2]" ensures that t2 will both lose connection and later regain it
 	- Immediately before regaining connection, t2 must move
@@ -343,4 +343,5 @@ run trainConnections {
 		eventually (no Head.position.^successor & (Free-End))	
 	}
 
-} for 15 but exactly 2 Train, exactly 8 VSS, exactly 1 Track, exactly 6 Car
+} -- for 15 but exactly 2 Train, exactly 8 VSS, exactly 1 Track, exactly 6 Car 
+	for 15 but 1..30 steps, exactly 3 Train, exactly 20 VSS, exactly 1 Track, exactly 10 Car
