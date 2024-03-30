@@ -20,7 +20,8 @@ sig Train {
 	cars : some Car, // Each train has at least one Car (other than the Head - locomotive -, and the tail - last car)
 	head : one Head, // Each train has only one Head (locomotive)
 	tail : one Tail, // Each train has only one Tail (end of the train)
-	var unknowns : set VSS // When train becomes offline it is better to store the VSS's that became Unknown
+	var unknowns : set VSS, // When train becomes offline it is better to store the VSS's that became Unknown
+	brokenCar: lone Car, //Each train may break once
 }
 
 // All trains have 3 types of States:
@@ -121,6 +122,7 @@ fact noTrainSelfCollision {
 pred nop {
 	position' = position
 	all t1: Train | t1.unknowns' = t1.unknowns
+	all t:Train | t.brokenCar' = t.brokenCar
 	Incomplete' = Incomplete
 	Offline' = Offline
 	Free' = Free
@@ -158,10 +160,12 @@ pred move [t: Train] {
 
 	// if Train is Incomplete
 	t in Incomplete implies {
-		all c: t.cars | t.tail in c.*succ implies (Unknown' = Unknown + c.position')
-
-		Free' = VSS - Unknown - Train.cars.position'
-		Occupied' = VSS & Train.cars.position' - Unknown
+		// Add the positions occupied by the lost fragment of the train to Unknown
+		Unknown' = Unknown + (t.brokenCar.^succ).position'
+		
+		// Update Free and Occupied sets
+		Free' = VSS - Unknown' - (Train - Offline).cars.position'
+		Occupied' = (Train - Offline).cars.position' - Unknown'
 	}
 
 	// General Frame conditions
@@ -172,25 +176,24 @@ pred move [t: Train] {
 }
 
 // Disconnection of a train
-/*pred loseCar [t: Train, c: Car] {
+pred loseCar [t: Train, c: Car] {
 	// Guard
 	t not in Incomplete
 	c in t.cars
-	not c in Head
-	
-	
-	
+	some c.succ
+
 	// Effect
 	Incomplete' = Incomplete + t
-	// c will lose succ
-	c.succ' = none
-	-- t.cars' = t.cars - c.*succ
 	// the vss of c and the cars in front of it will become unknown
-	// Unknown' = Unknown + 
+	Unknown' = Unknown + (c.^succ).position
+	// train now has a broken car
+	t.brokenCar' = c
 
 	// Frame conditions
-	Train.cars.position' = Train.cars.position	
-}*/
+	all c: Car | c.position' = c.position
+	Free' = Free
+	Occupied' = Occupied - Unknown'
+}
 
 // Train becomes offline (looses connection to central control)
 pred loseConnection [t: Train] {
@@ -247,6 +250,7 @@ fact Traces {
 		or (some t: Train | move[t]) 
 	 	or (some t: Train | loseConnection[t])
 		or (some t: Train | gainConnection[t])
+		or (some t:Train | some c:Car | c in t.cars and loseCar[t, c])
 	)
 }
 
@@ -344,3 +348,24 @@ run trainConnections {
 	}
 
 } for 15 but exactly 2 Train, exactly 8 VSS, exactly 1 Track, exactly 6 Car
+
+// Run command to validate losing cars
+/* 
+Given 1 Train t and one Car c:
+	- t starts in the beggining of the track;
+	- No train starts at the End of the track;
+	- "eventually loseCar[t, c]" ensures that t will lose c
+	- After losing a car, t must move
+	- Eventually there will be no free VSS between trains
+*/
+run runLoseCar{
+		some t: Train, c:Car | {
+			c in t.cars
+			t.tail.position in Begin
+			no Head.position & End
+			eventually loseCar[t, c]
+			always (loseCar[t, c] implies after move[t] )
+			eventually (no Head.position.*successor & (Free-End))
+	}
+} for 10 but 1..15 steps, exactly 2 Train, exactly 10 VSS, exactly 1 Track, exactly 6 Car
+
