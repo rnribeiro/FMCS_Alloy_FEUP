@@ -20,6 +20,7 @@ sig Train {
 	cars : some Car, // Each train has at least one Car (other than the Head - locomotive -, and the tail - last car)
 	head : one Head, // Each train has only one Head (locomotive)
 	tail : one Tail, // Each train has only one Tail (end of the train)
+	var unknowns : set VSS // When train becomes offline it is better to store the VSS's that became Unknown
 }
 
 // All trains have 3 types of States:
@@ -97,6 +98,9 @@ fact Init {
 	no Offline
 	all c1, c2:Car | c1->c2 in succ implies c1.position = c2.position.successor
 
+	// All Trains are online so none has unknown VSS's
+	Train.unknowns = none
+
 	// Initially there is no more than one car in the same VSS
 	position in Car lone -> one VSS
 	// All train should have at least one car between the head and the tail
@@ -116,6 +120,7 @@ fact noTrainSelfCollision {
 // No operation predicate
 pred nop {
 	position' = position
+	all t1: Train | t1.unknowns' = t1.unknowns
 	Incomplete' = Incomplete
 	Offline' = Offline
 	Free' = Free
@@ -157,18 +162,17 @@ pred move [t: Train] {
 
 		Free' = VSS - Unknown - Train.cars.position'
 		Occupied' = VSS & Train.cars.position' - Unknown
-		
 	}
 
 	// General Frame conditions
 	all c: (Train - t).cars | c.position' = c.position
 	Incomplete' = Incomplete
 	Offline' = Offline
-
+	all t1: Train | t1.unknowns' = t1.unknowns
 }
 
 // Disconnection of a train
-pred loseCar [t: Train, c: Car] {
+/*pred loseCar [t: Train, c: Car] {
 	// Guard
 	t not in Incomplete
 	c in t.cars
@@ -186,11 +190,13 @@ pred loseCar [t: Train, c: Car] {
 
 	// Frame conditions
 	Train.cars.position' = Train.cars.position	
-}
+}*/
 
+// Train becomes offline (looses connection to central control)
 pred loseConnection [t: Train] {
 	// Guard
 	t not in Offline
+	no t.unknowns
 
 	// Effects
 	// Train becomes offline
@@ -199,21 +205,47 @@ pred loseConnection [t: Train] {
 	Occupied' = Occupied - t.cars.position
 	// Add train cars' vss to Unknown
 	Unknown' = Unknown + t.cars.position
+	// Store Unknown vss in Train
+	t.unknowns' = t.cars.position
 
 	// Frame conditions
 	all c: Car | c.position' = c.position
+	all t1: (Train - t) | t1.unknowns' = t1.unknowns
 	Incomplete' = Incomplete
 	Free' = Free
+}
 
-	
+// Train becomes online (gains connection to central control)
+pred gainConnection [t: Train] {
+	// Guard
+	t in Offline
+	t.unknowns != none
+
+	// Effects
+	// Train becomes online, needs to be removed from the Offline
+	Offline' = Offline - t
+	// Old vss's marked as Unknown need to be converted to Free or Occupied, acording to train cars' position
+	// Initially, they are removed from the Unknown
+	Unknown' = Unknown - t.unknowns
+	// Then, they are converted to Free or Occupied (in case they have a car from the train)
+	Free' = Free + (t.unknowns - t.cars.position)
+	Occupied' = Occupied + t.cars.position
+	// Reset the Unknown vss stored in the train
+	t.unknowns' = none
+
+	// Frame conditions
+	all c: Car | c.position' = c.position
+	all t1: (Train - t) | t1.unknowns' = t1.unknowns
+	Incomplete' = Incomplete
 }
 
 // Behaviour of the system
 fact Traces {
 	always (
-		nop 
-		or (some t:Train | move[t]) 
+		nop
+		or (some t: Train | move[t]) 
 	 	or (some t: Train | loseConnection[t])
+		or (some t: Train | gainConnection[t])
 	)
 }
 
@@ -232,10 +264,12 @@ run traces {
 		t1 != t2
 		t1.tail.position in Begin
 		no Head.position & End
-		eventually loseConnection[t2]
-		always (loseConnection[t2] implies after move[t2] )
-		eventually (no Head.position.*successor & (Free-End))
 		
+		// gainConnection
+		eventually gainConnection[t2]
+		--always (gainConnection[t2] implies before move[t2])
+
+		eventually (no Head.position.*successor & (Free-End))	
 	}
 
-} for 15 but 1..30 steps, exactly 2 Train, exactly 6 VSS, exactly 1 Track, exactly 4 Car
+} for 12 but exactly 2 Train, exactly 6 VSS, exactly 1 Track, exactly 4 Car
