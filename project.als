@@ -79,7 +79,7 @@ fact onlyOneState {
 		no Free & Occupied 
 		no Occupied & Unknown
 		no Free & Unknown
-		--all v:VSS | v in (Free + Occupied + Unknown)
+		all v:VSS | v in (Free + Occupied + Unknown)
 	})
 	always ({
 		no Incomplete & Offline & (Train - Incomplete - Offline)
