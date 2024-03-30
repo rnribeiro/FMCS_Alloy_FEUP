@@ -223,13 +223,14 @@ pred gainConnection [t: Train] {
 
 	// Effects
 	// Train becomes online, needs to be removed from the Offline
-	Offline' = Offline - t
-	// Old vss's marked as Unknown need to be converted to Free or Occupied, acording to train cars' position
-	// Initially, they are removed from the Unknown
+	Offline' = Offline - t	
+	
 	Unknown' = Unknown - t.unknowns
-	// Then, they are converted to Free or Occupied (in case they have a car from the train)
-	Free' = Free + (t.unknowns - t.cars.position)
-	Occupied' = Occupied + t.cars.position
+	Free' = VSS - Unknown' - (Train-Offline').cars.position
+	Occupied' = (Train-Offline').cars.position - Unknown'
+
+	
+
 	// Reset the Unknown vss stored in the train
 	t.unknowns' = none
 
@@ -267,9 +268,9 @@ run traces {
 		
 		// gainConnection
 		eventually gainConnection[t2]
-		--always (gainConnection[t2] implies before move[t2])
+		always (gainConnection[t2] implies before move[t2])
 
-		eventually (no Head.position.*successor & (Free-End))	
+		eventually (no Head.position.^successor & (Free-End))	
 	}
 
 } for 12 but exactly 2 Train, exactly 6 VSS, exactly 1 Track, exactly 4 Car
