@@ -264,6 +264,9 @@ run trackLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 0 Train, exac
 // Run command to validate Train linearity
 run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exactly 5 Car
 
+// Run command to valide Train positions in the track
+run trainPositions {} for exactly 1 Track, exactly 20 VSS, exactly 3 Train, exactly 10 Car
+
 // Run command for 1 train to move from the beggining to the end of the track to verify that all VSS states change accordingly
 run trainMovement {
 	some t: Train {
@@ -272,9 +275,9 @@ run trainMovement {
 	}
 } for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exactly 5 Car
 
-// Check command to verify if there are no train collisions:
+// Check command to verify if there are no train collisions given 2 trains t1, t2 such that:
 /*
-	Given 2 trains t1, t2 such that:
+
 		- t1 starts in the beggining of the track
 		- t2 does not start in the end of the track
 		- Eventually one of the trains reaches the end of the track
@@ -293,9 +296,9 @@ check noTrainMovementCollision {
 	})
 } for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
 
-// Check command to verify if there are no train collisions:
+// Check command to verify if there are no train collisions given 2 trains t1, t2 such that:
 /*
-	Given 2 trains t1, t2 such that:
+	
 		- t1 starts in the beggining of the track
 		- t2 does not start in the end of the track
 		- Eventually one of the trains reaches the end of the track
@@ -321,7 +324,7 @@ check noTrainMovementCollision2 {
 /* 
 Given 2 trains t1 and t2:
 	- t1 starts in the beggining of the track;
-	- No train starts in the End of the track;
+	- No train starts at the End of the track;
 	- "eventually gainConnection[t2]" ensures that t2 will both lose connection and later regain it
 	- Immediately before regaining connection, t2 must move
 	- Eventually there will be no free VSS between trains
