@@ -104,7 +104,7 @@ fact Init {
 	// Initially there is no more than one car in the same VSS
 	position in Car lone -> one VSS
 	// All train should have at least one car between the head and the tail
---	all t: Train | some (t.cars - t.head - t.tail)
+	all t: Train | some (t.cars - t.head - t.tail)
 
 	// VSS's are either free or occupied
 	Occupied = Car.position
@@ -256,10 +256,78 @@ assert fullSafety {
 	position in Car lone -> one VSS
 }
 
-check fullSafety
+check fullSafety for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
 
-// Example run command
-run traces {
+// Run command to validate Track linearity
+run trackLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 0 Train, exactly 0 Car
+
+// Run command to validate Train linearity
+run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exactly 5 Car
+
+// Run command for 1 train to move from the beggining to the end of the track to verify that all VSS states change accordingly
+run trainMovement {
+	some t: Train {
+		t.tail.position in Begin
+		eventually some Head.position & End
+	}
+} for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exactly 5 Car
+
+// Check command to verify if there are no train collisions:
+/*
+	Given 2 trains t1, t2 such that:
+		- t1 starts in the beggining of the track
+		- t2 does not start in the end of the track
+		- Eventually one of the trains reaches the end of the track
+		- Eventually there will be no free VSS between trains
+	
+*/
+check noTrainMovementCollision {
+	some t1, t2: Train |({
+		t1.tail.position in Begin
+		no t2.head.position & End
+		eventually some Head.position & End
+		eventually (no Head.position.^successor & (Free-End))
+	}) implies ({
+		always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
+		position in Car lone -> one VSS
+	})
+} for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
+
+// Check command to verify if there are no train collisions:
+/*
+	Given 2 trains t1, t2 such that:
+		- t1 starts in the beggining of the track
+		- t2 does not start in the end of the track
+		- Eventually one of the trains reaches the end of the track
+		- Eventually there will be no free VSS between trains
+		- One of the trains loses and regains connection with the Movement Authority
+	
+*/
+check noTrainMovementCollision2 {
+	some t1, t2: Train |({
+		t1.tail.position in Begin
+		no t2.head.position & End
+		eventually some Head.position & End
+		eventually gainConnection[t2]
+		eventually (no Head.position.^successor & (Free-End))
+	}) implies ({
+		always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
+		position in Car lone -> one VSS
+	})
+} for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
+
+
+// Run command to validate both losing and regaining connections
+/* 
+Given 2 trains t1 and t2:
+	- t1 starts in the beggining of the track;
+	- No train starts in the End of the track;
+	- "eventually gainConnection[t2]" ensures that t2 will both lose connection and later regain it
+	- Immediately before regaining connection, t2 must move
+	- Eventually there will be no free VSS between trains
+
+*/
+run trainConnections {
 
 	some t1, t2: Train | {
 		t1 != t2
@@ -269,8 +337,7 @@ run traces {
 		// gainConnection
 		eventually gainConnection[t2]
 		always (gainConnection[t2] implies before move[t2])
-
 		eventually (no Head.position.^successor & (Free-End))	
 	}
 
-} for 12 but exactly 2 Train, exactly 6 VSS, exactly 1 Track, exactly 4 Car
+} for 15 but exactly 2 Train, exactly 8 VSS, exactly 1 Track, exactly 6 Car
