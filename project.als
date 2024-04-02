@@ -21,7 +21,7 @@ sig Train {
 	head : one Head, // Each train has only one Head (locomotive)
 	tail : one Tail, // Each train has only one Tail (end of the train)
 	var unknowns : set VSS, // When train becomes offline it is better to store the VSS's that became Unknown
-	brokenCar: lone Car, //Each train may break once
+	var brokenCar: lone Car, //Each train may break once
 }
 
 // All trains have 3 types of States:
@@ -41,7 +41,6 @@ sig Car {
 
 // Sets that define the cars the are the first and last cars of a train
 sig Head, Tail extends Car {}
-
 
 fact Multiplicities {
 	// One VSS can only belong to one track
@@ -101,6 +100,7 @@ fact Init {
 
 	// All Trains are online so none has unknown VSS's
 	Train.unknowns = none
+	Train.brokenCar = none
 
 	// Initially there is no more than one car in the same VSS
 	position in Car lone -> one VSS
@@ -193,6 +193,7 @@ pred loseCar [t: Train, c: Car] {
 	all c: Car | c.position' = c.position
 	Free' = Free
 	Occupied' = Occupied - Unknown'
+	Offline' = Offline
 }
 
 // Train becomes offline (looses connection to central control)
@@ -254,22 +255,47 @@ fact Traces {
 	)
 }
 
-// Goal - No 2 trains in the same VSS
-assert fullSafety {
-	always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
-	position in Car lone -> one VSS
+// Check if it's possible to go from any VSS back to the Begin VSS
+assert noTrackCycle {
+	all t:Track, v: t.vss - t.begin | t.begin not in v.*successor
 }
 
-check fullSafety for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
+check noTrackCycle for 6
+
+// Check if it's possible to go from the end of the track to any other VSS
+assert noEndSucc {
+	all t:Track | no t.end.*successor & (t.vss-t.end)
+}
+
+check noEndSucc for 6
 
 // Run command to validate Track linearity
 run trackLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 0 Train, exactly 0 Car
 
 // Run command to validate Train linearity
-run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 1 Train, exactly 5 Car
+run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 2 Train, exactly 6 Car
 
-// Run command to valide Train positions in the track
-run trainPositions {} for exactly 1 Track, exactly 20 VSS, exactly 3 Train, exactly 10 Car
+// Run command to valide Train positions in the track: 
+// 			one train in the beginning of the track, 
+//			2 in the middle without free VSS in between
+// 			another train in the end of the track
+run trainPositions {
+	some t1, t2, t3, t4: Train | {
+		t1.tail.position in Begin
+		t3.tail.position = t2.head.position.successor
+		t4.head.position in End
+	}
+	one Track
+	some Free
+} for 15
+
+
+// Goal - No 2 trains in the same VSS
+assert fullSafety {
+	always (all t1, t2: Train | t1!=t2 implies always ( no t1.cars.position & t2.cars.position))
+}
+
+check fullSafety for 10 but exactly 1 Track, exactly 12 VSS, exactly 2 Train, exactly 6 Car
 
 // Run command for 1 train to move from the beggining to the end of the track to verify that all VSS states change accordingly
 run trainMovement {
