@@ -1,3 +1,5 @@
+----------------------------------------               System Modelling               ----------------------------------------
+
 // Track Entity
 sig Track {
 	vss : some VSS, // Each track is composed of at least one VSS (other than the beginning and the end)
@@ -71,24 +73,58 @@ fact linearTrack {
 	no End.successor
 } 
 
-// A VSS can only have one state at once
-// A Train can only be in one state at once: Online and Complete, Incomplete or Offline
-fact onlyOneState {
-	always ({
-		no Free & Occupied & Unknown
-		no Free & Occupied 
-		no Occupied & Unknown
-		no Free & Unknown
-		all v:VSS | v in (Free + Occupied + Unknown)
-	})
-	always ({
-		no Incomplete & Offline & (Train - Incomplete - Offline)
-		no Incomplete & Offline
-		no Incomplete & (Train - Incomplete - Offline)
-		no Offline & (Train - Incomplete - Offline)
-	})
+// A car cannot be in a vss that is in front of the vss of the car in front of it
+fact noTrainSelfCollision {
+	always (all c:Car | not c.position in succ.c.position.*successor)
 }
 
+
+----------------------------------------                 Model Validation                ----------------------------------------
+
+
+// Check if it's possible to go from any VSS back to the Begin VSS
+assert noTrackCycle {
+	all t:Track, v: t.vss - t.begin | t.begin not in v.*successor
+}
+
+check noTrackCycle  for 9 but exactly 1 steps
+
+// Check if it's possible to go from the end of the track to any other VSS
+assert noEndSucc {
+	all t:Track | no t.end.*successor & (t.vss-t.end)
+}
+
+check noEndSucc for 10 but exactly 1 steps
+
+// Check if one train only has one track
+assert trainInOnlyOneTrack {
+	all t:Train {
+		one t.cars.position.~vss
+	}
+}
+check trainInOnlyOneTrack for 8 but exactly 1 steps, exactly 1 Train
+
+// Run command to validate Track linearity
+run trackLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 0 Train, exactly 0 Car
+
+// Run command to validate Train linearity
+run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 2 Train, exactly 6 Car
+
+// Run command to valide Train positions in the track: 
+// 			one train in the beginning of the track, 
+//			2 in the middle without free VSS in between
+// 			another train in the end of the track
+run trainPositions {
+	some t1, t2, t3, t4: Train | {
+		t1!=t2 and t1!=t3 and t1!=t4 and t2!=t3 and t2 != t4 and t3!=t4
+		t1.tail.position in Begin
+		t3.tail.position = t2.head.position.successor
+		t4.head.position in End
+	}
+	one Track
+} for 15
+
+----------------------------------------             Behaviour Modelling            ----------------------------------------
 
 // Initial state of the system
 fact Init {
@@ -113,10 +149,26 @@ fact Init {
 	no Unknown
 }
 
-// A car cannot be in a vss that is in front of the vss of the car in front of it
-fact noTrainSelfCollision {
-	always (all c:Car | not c.position in succ.c.position.*successor)
+// A VSS can only have one state at once
+// A Train can only be in one state at once: Online and Complete, Incomplete or Offline
+fact onlyOneState {
+	always ({
+		no Free & Occupied & Unknown
+		no Free & Occupied 
+		no Occupied & Unknown
+		no Free & Unknown
+		all v:VSS | v in (Free + Occupied + Unknown)
+	})
+	always ({
+		no Incomplete & Offline & (Train - Incomplete - Offline)
+		no Incomplete & Offline
+		no Incomplete & (Train - Incomplete - Offline)
+		no Offline & (Train - Incomplete - Offline)
+	})
 }
+
+ ----------------------------------------                Event Modelling                 ----------------------------------------
+
 
 // No operation predicate
 pred nop {
@@ -255,39 +307,8 @@ fact Traces {
 	)
 }
 
-// Check if it's possible to go from any VSS back to the Begin VSS
-assert noTrackCycle {
-	all t:Track, v: t.vss - t.begin | t.begin not in v.*successor
-}
 
-check noTrackCycle for 6
-
-// Check if it's possible to go from the end of the track to any other VSS
-assert noEndSucc {
-	all t:Track | no t.end.*successor & (t.vss-t.end)
-}
-
-check noEndSucc for 6
-
-// Run command to validate Track linearity
-run trackLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 0 Train, exactly 0 Car
-
-// Run command to validate Train linearity
-run trainLinearity {} for exactly 1 Track, exactly 10 VSS, exactly 2 Train, exactly 6 Car
-
-// Run command to valide Train positions in the track: 
-// 			one train in the beginning of the track, 
-//			2 in the middle without free VSS in between
-// 			another train in the end of the track
-run trainPositions {
-	some t1, t2, t3, t4: Train | {
-		t1.tail.position in Begin
-		t3.tail.position = t2.head.position.successor
-		t4.head.position in End
-	}
-	one Track
-	some Free
-} for 15
+----------------------------------------            Behaviour Validation             ----------------------------------------
 
 
 // Goal - No 2 trains in the same VSS
